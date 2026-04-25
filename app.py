@@ -384,7 +384,7 @@ def analyze():
         app.logger.info("Running pixel diff pipeline…")
         generate_blueprint_diff(
             v1_path, v2_path, diff_path,
-            dpi=100,
+            dpi=150,
             blur_ksize=3,
             diff_threshold=30,
             context_alpha=0.30,
@@ -392,7 +392,7 @@ def analyze():
 
         # --- Encode images for VLM + response ---
         app.logger.info("Encoding images…")
-        img_v1 = pdf_to_image(v1_path, dpi=100)
+        img_v1 = pdf_to_image(v1_path, dpi=150)
 
         diff_bgr = cv2.imread(str(diff_path))
         if diff_bgr is None:
