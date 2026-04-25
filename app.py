@@ -399,23 +399,23 @@ def analyze():
             raise RuntimeError("Diff image could not be read after generation")
 
         deletions_only = _make_deletions_only(diff_bgr)
+        b64_diff = _img_to_b64_png(diff_bgr)
+        del diff_bgr  # free memory — no longer needed
 
         b64_v1        = _img_to_b64_png(img_v1)
-        b64_diff      = _img_to_b64_png(diff_bgr)
         b64_deletions = _img_to_b64_png(deletions_only)
+
+        # --- Marked-up construction drawing ---
+        app.logger.info("Generating marked-up construction drawing…")
+        marked_v1 = _draw_highlights_on_image(img_v1, deletions_only)
+        del img_v1, deletions_only  # free memory — no longer needed
+        b64_marked_construction = _img_to_b64_png(marked_v1)
+        del marked_v1  # free memory
 
         # --- VLM analysis ---
         app.logger.info("Calling Claude Vision…")
         analysis = _call_vlm(b64_v1, b64_deletions)
-
-        # --- Marked-up construction drawing ---
-        # Draw circles directly onto the construction drawing image.
-        # The diff and img_v1 share the same pixel coordinate space (same DPI,
-        # same dimensions) so no coordinate transform is needed — just draw
-        # the circles at the cluster centres found in the diff.
-        app.logger.info("Generating marked-up construction drawing…")
-        marked_v1 = _draw_highlights_on_image(img_v1, deletions_only)
-        b64_marked_construction = _img_to_b64_png(marked_v1)
+        del b64_v1, b64_deletions  # free memory after VLM call
 
         return jsonify({
             "diff_image_base64":           b64_diff,
