@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blueprint</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <!-- ── Header ────────────────────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="header-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="9" y1="15" x2="15" y2="15"/>
+        <line x1="9" y1="12" x2="12" y2="12"/>
+      </svg>
+    </div>
+    <h1>Blueprint</h1>
+    <p class="subtitle">Automating shop drawing submittals</p>
+  </header>
+
+  <!-- ── Main ──────────────────────────────────────────────────────────────── -->
+  <main class="app-main">
+
+    <!-- Upload Section -->
+    <section class="upload-section">
+
+      <!-- Construction Drawing -->
+      <div class="upload-card" id="zone-construction" role="button" tabindex="0"
+           aria-label="Upload Construction Drawing">
+        <input type="file" id="input-construction" accept=".pdf,application/pdf" hidden>
+        <div class="upload-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <p class="upload-label">Construction Drawing</p>
+        <p class="upload-hint">PDF only &middot; max 20 MB</p>
+        <p class="file-name" id="name-construction"></p>
+      </div>
+
+      <!-- Shop Drawing -->
+      <div class="upload-card" id="zone-shop" role="button" tabindex="0"
+           aria-label="Upload Shop Drawing">
+        <input type="file" id="input-shop" accept=".pdf,application/pdf" hidden>
+        <div class="upload-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <p class="upload-label">Shop Drawing</p>
+        <p class="upload-hint">PDF only &middot; max 20 MB</p>
+        <p class="file-name" id="name-shop"></p>
+      </div>
+
+    </section>
+
+    <!-- Analyze Button -->
+    <div class="action-row">
+      <button id="btn-analyze" class="btn-primary" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        Analyze Drawings
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading" class="loading-state hidden">
+      <div class="spinner"></div>
+      <p>Running pixel diff and AI analysis&hellip; this may take 15&ndash;30 seconds.</p>
+    </div>
+
+    <!-- Error Banner -->
+    <div id="error-banner" class="error-banner hidden" role="alert">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span id="error-text"></span>
+    </div>
+
+    <!-- Results Section -->
+    <section id="results" class="results-section hidden">
+      <div class="results-header">
+        <h2>Analysis Results</h2>
+        <span class="results-badge" id="diff-count"></span>
+      </div>
+
+      <!-- Recommendation Banner -->
+      <div id="recommendation-banner" class="recommendation-banner hidden">
+        <div class="rec-verdict" id="rec-verdict"></div>
+        <div class="rec-reason" id="rec-reason"></div>
+      </div>
+
+      <div class="results-grid">
+
+        <!-- Diff Image -->
+        <div class="result-card diff-card">
+          <p class="card-title">Pixel Diff Overlay</p>
+          <img id="diff-image" src="" alt="Pixel diff overlay showing changes between drawings">
+          <div class="legend">
+            <span class="legend-item">
+              <span class="legend-dot red"></span> Removed (Construction Drawing only)
+            </span>
+            <span class="legend-item">
+              <span class="legend-dot green"></span> Added (Shop Drawing only)
+            </span>
+          </div>
+        </div>
+
+        <!-- VLM Analysis -->
+        <div class="result-card analysis-card">
+          <p class="card-title">Missing Dimensions</p>
+          <ol id="differences-list"></ol>
+        </div>
+
+      </div>
+
+      <!-- Marked-Up Construction Drawing -->
+      <div class="result-card markup-card hidden" id="markup-card">
+        <div class="email-header">
+          <p class="card-title">Marked-Up Construction Drawing</p>
+          <a id="btn-download" class="btn-copy" download="marked_up_construction.png">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download
+          </a>
+        </div>
+        <img id="marked-construction-img" src="" alt="Construction drawing with missing dimensions circled" class="zoomable-img" title="Click to zoom" style="width:100%;border-radius:8px;border:1px solid var(--border);display:block;margin-top:4px;cursor:zoom-in;">
+      </div>
+
+      <!-- Email Draft -->
+      <div class="result-card email-card hidden" id="email-card">
+        <div class="email-header">
+          <p class="card-title">Draft Email to Submitter</p>
+          <button class="btn-copy" id="btn-copy" title="Copy to clipboard">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Copy
+          </button>
+        </div>
+        <textarea class="email-body" id="email-body" spellcheck="true" aria-label="Draft email — click to edit"></textarea>
+      </div>
+
+      <!-- Accept / Reject -->
+      <div class="decision-row hidden" id="decision-row">
+        <button class="btn-decision btn-accept" id="btn-accept">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Accept
+        </button>
+        <button class="btn-decision btn-reject" id="btn-reject">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          Reject
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ── Lightbox ──────────────────────────────────────────────────────────── -->
+  <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Zoomed image">
+    <button class="lightbox-close" id="lightbox-close" aria-label="Close">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+    <div class="lightbox-hint">Scroll to zoom &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Esc to close</div>
+    <div class="lightbox-viewport" id="lightbox-viewport">
+      <img id="lightbox-img" src="" alt="Zoomed drawing" draggable="false">
+    </div>
+  </div>
+
+  <script>
+    // ── Element refs ───────────────────────────────────────────────────────
+    const inputConstruction  = document.getElementById("input-construction");
+    const inputShop          = document.getElementById("input-shop");
+    const zoneConstruction   = document.getElementById("zone-construction");
+    const zoneShop           = document.getElementById("zone-shop");
+    const nameConstruction   = document.getElementById("name-construction");
+    const nameShop           = document.getElementById("name-shop");
+    const btnAnalyze         = document.getElementById("btn-analyze");
+    const loading            = document.getElementById("loading");
+    const errorBanner        = document.getElementById("error-banner");
+    const errorText          = document.getElementById("error-text");
+    const results            = document.getElementById("results");
+    const diffImage          = document.getElementById("diff-image");
+    const diffList           = document.getElementById("differences-list");
+    const diffCount          = document.getElementById("diff-count");
+    const recBanner          = document.getElementById("recommendation-banner");
+    const recVerdict         = document.getElementById("rec-verdict");
+    const recReason          = document.getElementById("rec-reason");
+    const emailBody          = document.getElementById("email-body");
+    const btnCopy            = document.getElementById("btn-copy");
+    const markupCard            = document.getElementById("markup-card");
+    const markedConstructionImg = document.getElementById("marked-construction-img");
+    const btnDownload           = document.getElementById("btn-download");
+    const decisionRow           = document.getElementById("decision-row");
+    const btnAccept             = document.getElementById("btn-accept");
+    const btnReject             = document.getElementById("btn-reject");
+
+    // ── Enable button when both files are present ──────────────────────────
+    function checkReady() {
+      btnAnalyze.disabled = !(inputConstruction.files.length && inputShop.files.length);
+    }
+
+    // ── Wire a drop zone to its hidden file input ──────────────────────────
+    function wireUploadZone(zone, input, nameEl) {
+      // Click to open file picker
+      zone.addEventListener("click", () => input.click());
+      zone.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); }
+      });
+
+      // File input change
+      input.addEventListener("change", () => {
+        const file = input.files[0];
+        nameEl.textContent = file ? file.name : "";
+        zone.classList.toggle("has-file", !!file);
+        checkReady();
+      });
+
+      // Drag-and-drop
+      zone.addEventListener("dragover", e => {
+        e.preventDefault();
+        zone.classList.add("drag-over");
+      });
+      zone.addEventListener("dragleave", e => {
+        if (!zone.contains(e.relatedTarget)) zone.classList.remove("drag-over");
+      });
+      zone.addEventListener("drop", e => {
+        e.preventDefault();
+        zone.classList.remove("drag-over");
+        const file = e.dataTransfer.files[0];
+        if (!file) return;
+        if (file.type !== "application/pdf" && !file.name.endsWith(".pdf")) {
+          showError("Please drop a PDF file.");
+          return;
+        }
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        nameEl.textContent = file.name;
+        zone.classList.add("has-file");
+        checkReady();
+      });
+    }
+
+    wireUploadZone(zoneConstruction, inputConstruction, nameConstruction);
+    wireUploadZone(zoneShop, inputShop, nameShop);
+
+    // ── Accept / Reject buttons ────────────────────────────────────────────
+    function setDecision(verdict) {
+      const isAccept = verdict === "accept";
+      const prefix = isAccept
+        ? "This submittal has been ACCEPTED.\n\n"
+        : "This submittal has been REJECTED.\n\n";
+
+      // Prepend verdict to the email body
+      const current = emailBody.value;
+      const stripped = current.replace(/^This submittal has been (ACCEPTED|REJECTED)\.\n\n/, "");
+      emailBody.value = prefix + stripped;
+
+      // Update button states
+      btnAccept.classList.toggle("btn-decision--active-accept", isAccept);
+      btnReject.classList.toggle("btn-decision--active-reject", !isAccept);
+      btnAccept.classList.toggle("btn-decision--active-reject", false);
+      btnReject.classList.toggle("btn-decision--active-accept", false);
+    }
+
+    btnAccept.addEventListener("click", () => setDecision("accept"));
+    btnReject.addEventListener("click", () => setDecision("reject"));
+
+    // ── Copy email to clipboard ────────────────────────────────────────────
+    btnCopy.addEventListener("click", async () => {
+      const text = emailBody.value;
+      await navigator.clipboard.writeText(text);
+      const orig = btnCopy.innerHTML;
+      btnCopy.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+      btnCopy.classList.add("copied");
+      setTimeout(() => { btnCopy.innerHTML = orig; btnCopy.classList.remove("copied"); }, 2000);
+    });
+
+    // ── Error helper ───────────────────────────────────────────────────────
+    function showError(msg) {
+      errorText.textContent = msg;
+      errorBanner.classList.remove("hidden");
+    }
+
+    function hideError() {
+      errorBanner.classList.add("hidden");
+    }
+
+    // ── Analyze ────────────────────────────────────────────────────────────
+    btnAnalyze.addEventListener("click", async () => {
+      hideError();
+      results.classList.add("hidden");
+      loading.classList.remove("hidden");
+      btnAnalyze.disabled = true;
+
+      const form = new FormData();
+      form.append("construction", inputConstruction.files[0]);
+      form.append("shop", inputShop.files[0]);
+
+      try {
+        const resp = await fetch("/analyze", { method: "POST", body: form });
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          throw new Error(data.error ?? `Server error (${resp.status})`);
+        }
+
+        // Render diff image
+        diffImage.src = "data:image/png;base64," + data.diff_image_base64;
+
+        // Render differences list
+        diffList.innerHTML = "";
+        const diffs = Array.isArray(data.differences) ? data.differences : [String(data.differences)];
+        diffs.forEach(diff => {
+          const li = document.createElement("li");
+          li.textContent = diff;
+          diffList.appendChild(li);
+        });
+
+        // Badge
+        diffCount.textContent = `${diffs.length} dimension${diffs.length !== 1 ? "s" : ""} missing`;
+
+        // Recommendation banner
+        const rec = (data.recommendation || "").trim().toUpperCase();
+        if (rec) {
+          recVerdict.textContent = rec;
+          recVerdict.className = "rec-verdict " + (
+            rec === "ACCEPT"               ? "rec-accept" :
+            rec === "REJECT"               ? "rec-reject" :
+                                             "rec-revise"
+          );
+          recReason.textContent = data.recommendation_reason || "";
+          recBanner.classList.remove("hidden");
+        }
+
+        // Email draft
+        if (data.email) {
+          emailBody.value = data.email;
+          document.getElementById("email-card").classList.remove("hidden");
+        } else {
+          document.getElementById("email-card").classList.add("hidden");
+        }
+
+        // Marked-up construction drawing
+        if (data.marked_construction_base64) {
+          const src = "data:image/png;base64," + data.marked_construction_base64;
+          markedConstructionImg.src = src;
+          btnDownload.href = src;
+          markupCard.classList.remove("hidden");
+        } else {
+          markupCard.classList.add("hidden");
+        }
+
+        decisionRow.classList.remove("hidden");
+        // Reset button active states for fresh analysis
+        btnAccept.classList.remove("btn-decision--active-accept", "btn-decision--active-reject");
+        btnReject.classList.remove("btn-decision--active-accept", "btn-decision--active-reject");
+
+        results.classList.remove("hidden");
+        results.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        loading.classList.add("hidden");
+        btnAnalyze.disabled = false;
+        checkReady();
+      }
+    });
+
+    // ── Lightbox ───────────────────────────────────────────────────────────
+    const lightbox         = document.getElementById("lightbox");
+    const lightboxImg      = document.getElementById("lightbox-img");
+    const lightboxViewport = document.getElementById("lightbox-viewport");
+    const lightboxClose    = document.getElementById("lightbox-close");
+
+    let lbScale = 1, lbX = 0, lbY = 0;
+    let dragging = false, dragStartX = 0, dragStartY = 0, dragOriginX = 0, dragOriginY = 0;
+
+    function applyTransform() {
+      lightboxImg.style.transform = `translate(${lbX}px, ${lbY}px) scale(${lbScale})`;
+    }
+
+    function openLightbox(src) {
+      lightboxImg.src = src;
+      lbScale = 1; lbX = 0; lbY = 0;
+      applyTransform();
+      lightbox.classList.add("lightbox--open");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeLightbox() {
+      lightbox.classList.remove("lightbox--open");
+      document.body.style.overflow = "";
+    }
+
+    // Open on image click
+    markedConstructionImg.addEventListener("click", () => {
+      openLightbox(markedConstructionImg.src);
+    });
+
+    // Close on backdrop click or button
+    lightbox.addEventListener("click", e => {
+      if (e.target === lightbox || e.target === lightboxViewport) closeLightbox();
+    });
+    lightboxClose.addEventListener("click", closeLightbox);
+    document.addEventListener("keydown", e => { if (e.key === "Escape") closeLightbox(); });
+
+    // Scroll to zoom
+    lightboxViewport.addEventListener("wheel", e => {
+      e.preventDefault();
+      const delta  = e.deltaY > 0 ? 0.9 : 1.1;
+      const newScale = Math.min(Math.max(lbScale * delta, 0.5), 10);
+
+      // Zoom toward the cursor position
+      const rect = lightboxViewport.getBoundingClientRect();
+      const mx   = e.clientX - rect.left - rect.width  / 2;
+      const my   = e.clientY - rect.top  - rect.height / 2;
+      lbX = mx + (lbX - mx) * (newScale / lbScale);
+      lbY = my + (lbY - my) * (newScale / lbScale);
+      lbScale = newScale;
+      applyTransform();
+    }, { passive: false });
+
+    // Drag to pan
+    lightboxViewport.addEventListener("mousedown", e => {
+      if (e.button !== 0) return;
+      dragging = true;
+      dragStartX = e.clientX; dragStartY = e.clientY;
+      dragOriginX = lbX;      dragOriginY = lbY;
+      lightboxViewport.style.cursor = "grabbing";
+    });
+    window.addEventListener("mousemove", e => {
+      if (!dragging) return;
+      lbX = dragOriginX + (e.clientX - dragStartX);
+      lbY = dragOriginY + (e.clientY - dragStartY);
+      applyTransform();
+    });
+    window.addEventListener("mouseup", () => {
+      dragging = false;
+      lightboxViewport.style.cursor = "grab";
+    });
+  </script>
+
+</body>
+</html>

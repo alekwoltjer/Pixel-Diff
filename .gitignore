@@ -1,0 +1,23 @@
+# Environment / secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+venv/
+.venv/
+
+# macOS
+.DS_Store
+
+# Vercel
+.vercel/
+
+# Editor
+.claude/
+
+# Build artifacts
+diff_output.png
+*.pdf
